@@ -1,0 +1,8 @@
+geo-import-pipeline
+Copyright 2026 Inan Software OG
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+Third-party components and their licenses are listed in THIRD_PARTY_LICENSES.md.
+
+The repository contains no source data. Data imported at runtime remains subject
+to the terms of its respective provider; see docs/DATENQUELLEN.md.

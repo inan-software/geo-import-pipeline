@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare report directory
+        run: mkdir -p reports && chmod 777 reports
+      - name: Run tests
+        run: docker compose --profile test run --rm --build tests
+      - name: Check third-party licenses
+        run: docker compose --profile test run --rm --entrypoint python tests scripts/generate_licenses.py --check --output /repo/THIRD_PARTY_LICENSES.md
+      - name: Shut down
+        if: always()
+        run: docker compose --profile test down -v

@@ -1,0 +1,63 @@
+services:
+  db:
+    image: ${POSTGIS_IMAGE:-postgis/postgis}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geodata}
+      POSTGRES_USER: ${POSTGRES_USER:-geodata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/postgresql
+      # Example target tables for local use. A real deployment already has its own.
+      - ./examples/target_schema.sql:/docker-entrypoint-initdb.d/20_target_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  pipeline:
+    build:
+      context: .
+      target: base
+    environment: &pipeline_env
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-geodata}
+      POSTGRES_USER: ${POSTGRES_USER:-geodata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      GIP_TIMEZONE: ${GIP_TIMEZONE:-UTC}
+      GIP_LOG_LEVEL: ${GIP_LOG_LEVEL:-INFO}
+    volumes:
+      - ./config:/app/config:ro
+      - ./reports:/data/reports
+      - cache:/data/cache
+    depends_on:
+      db:
+        condition: service_healthy
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      target: test
+    environment:
+      <<: *pipeline_env
+      PYTHONPATH: /app/src
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./migrations:/app/migrations:ro
+      - ./config:/app/config:ro
+      - ./examples:/app/examples:ro
+      - ./scripts:/app/scripts:ro
+      # Only used to write and compare THIRD_PARTY_LICENSES.md.
+      - .:/repo
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  cache:
+    # Stable name so downloaded archives survive project renames and rebuilds.
+    name: geo_import_cache

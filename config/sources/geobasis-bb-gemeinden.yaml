@@ -1,0 +1,41 @@
+# Municipal boundaries of the federal state of Brandenburg (WFS, GML).
+# Data: © GeoBasis-DE/LGB, dl-de/by-2-0, (Daten geändert)
+id: geobasis-bb-gemeinden
+type: wfs
+schedule: "0 3 1 * *"
+wfs:
+  url: https://isk.geobasis-bb.de/ows/vg_wfs
+  version: 2.0.0
+  typename: app:gem
+  page_size: 100
+  page_delay_s: 1.0
+  source_crs: EPSG:25833
+  geometry_path: geom
+# gml:id is only a running number in this service, so the official municipality key is used.
+key: [ags]
+fields:
+  ags:     { path: ags, type: text, pad: 8, required: true }
+  name:    { path: gem_name, type: text }
+  kind:    { path: gem_art, type: text }
+  updated: { path: gem_aktualitaet, type: date }
+  origin:  { const: geobasis-bb }
+target:
+  kind: geometry
+  table: example.regions
+  geom_column: geom
+  geom_type: MULTIPOLYGON
+  columns:
+    region_key: ags
+    name: name
+    kind: kind
+    updated_on: updated
+    source: origin
+  metadata:
+    table: example.dataset_metadata
+    key: { dataset: geobasis-bb-gemeinden }
+    values:
+      publisher: Landesvermessung und Geobasisinformation Brandenburg
+      title: Verwaltungsgrenzen Brandenburg, Gemeinden
+      license: dl-de/by-2-0
+      attribution: © GeoBasis-DE/LGB, dl-de/by-2-0, (Daten geändert)
+      source_url: https://isk.geobasis-bb.de/ows/vg_wfs
