@@ -113,8 +113,11 @@ class WfsAdapter(SourceAdapter):
         return await with_retries(self.cfg, "WFS hits request", attempt)
 
     async def _page(self, start: int) -> list[RawRecord]:
-        size_param = "COUNT" if self.cfg.version == "2.0.0" else "MAXFEATURES"
-        params = self._params(**{size_param: str(self.cfg.page_size), "STARTINDEX": str(start)})
+        extra: dict[str, str] = {}
+        if self.cfg.paged:
+            size_param = "COUNT" if self.cfg.version == "2.0.0" else "MAXFEATURES"
+            extra = {size_param: str(self.cfg.page_size), "STARTINDEX": str(start)}
+        params = self._params(**extra)
 
         async def attempt() -> list[RawRecord]:
             parser = _new_parser(events=("end",), tag=self._feature_tag)
@@ -161,5 +164,7 @@ class WfsAdapter(SourceAdapter):
             received += len(page)
             self.stats.read = received
             log.info("%s: %d/%d features", self.source.id, received, expected)
+            if not self.cfg.paged:
+                break
         if received != expected:
             raise IncompleteFetchError(f"Received {received} features, service reported {expected}")

@@ -183,7 +183,21 @@ def test_concurrent_run_of_the_same_source_is_refused(settings, db):
     assert result.status == "failed" and "Another run" in result.error
 
 
-def test_wfs_110_uses_its_own_parameters(settings, db):
+def test_wfs_110_fetches_everything_in_one_request_by_default(settings, db):
+    calls, result = _run_110(settings, db, source(version="1.1.0"))
+    assert result.status == "success", result.error
+    assert "TYPENAME" in calls[0] and "TYPENAMES" not in calls[0]
+    assert len(calls) == 2 and "MAXFEATURES" not in calls[1] and "STARTINDEX" not in calls[1]
+    assert rows(db)[0]["srid"] == 4326
+
+
+def test_wfs_110_can_page_when_the_service_supports_it(settings, db):
+    calls, result = _run_110(settings, db, source(version="1.1.0", paging=True))
+    assert result.status == "success", result.error
+    assert "MAXFEATURES" in calls[1] and "STARTINDEX" in calls[1]
+
+
+def _run_110(settings, db, cfg):
     calls = []
 
     def handler(request):
@@ -203,7 +217,16 @@ def test_wfs_110_uses_its_own_parameters(settings, db):
         )
         return httpx.Response(200, text=body)
 
-    result = run(settings, db, handler, source(version="1.1.0"))
-    assert result.status == "success", result.error
-    assert "TYPENAME" in calls[0] and "MAXFEATURES" in calls[1]
-    assert rows(db)[0]["srid"] == 4326
+    return calls, run(settings, db, handler, cfg)
+
+
+def test_service_ignoring_the_start_index_is_detected(settings, db):
+    """Observed on a real WFS 1.1.0: every page repeats the first features."""
+    fake = FakeWfs([feature(str(i), f"N{i}", square(370000 + i * 1000)) for i in range(3)])
+
+    def ignores_start(request):
+        return fake(httpx.Request("GET", request.url.copy_set_param("STARTINDEX", "0")))
+
+    result = run(settings, db, ignores_start)
+    assert result.status == "failed"
+    assert rows(db) == []

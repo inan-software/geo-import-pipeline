@@ -7,15 +7,16 @@ of the pipeline does not change. Set GIP_PLUGIN_MODULES to load such modules.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import AsyncIterator, Awaitable, Callable, TypeVar
+from typing import AsyncIterator, Awaitable, Callable, Iterable, TypeVar
 
 import httpx
 from lxml import etree
 
-from ..config import HttpConfig, SourceConfig
+from ..config import ConfigError, HttpConfig, SourceConfig
 from ..model import FetchError, RawRecord, SourceStats
 
 log = logging.getLogger(__name__)
@@ -30,6 +31,15 @@ def register(type_name: str) -> Callable[[type["SourceAdapter"]], type["SourceAd
         return cls
 
     return decorator
+
+
+def load_plugins(modules: Iterable[str]) -> None:
+    """Import additional adapter modules. Registering happens as a side effect of the import."""
+    for name in modules:
+        try:
+            importlib.import_module(name)
+        except ImportError as exc:
+            raise ConfigError(f"Adapter module '{name}' cannot be imported: {exc}") from exc
 
 
 def adapter_for(source: SourceConfig, client: httpx.AsyncClient, stats: SourceStats, cache_dir: Path) -> "SourceAdapter":

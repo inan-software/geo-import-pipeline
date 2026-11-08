@@ -1,0 +1,46 @@
+# INKAR indicators for the municipalities of Brandenburg, newest yearly release.
+id: inkar-gemeinden-bb
+type: csv
+schedule: "0 4 2 * *"
+csv:
+  url_template: https://www.bbr-server.de/imagemap/inkar/download/inkar_{year}.zip
+  year_lookback: 3
+  archive: zip
+  member: "inkar*.csv"
+  delimiter: ";"
+  decimal: ","
+  encoding: utf-8
+  timeout_s: 300
+key: [kennziffer, bereich, kuerzel, indikator, zeitbezug]
+fields:
+  kennziffer: { path: Kennziffer, type: text, pad: 8 }
+  bereich:    { path: Bereich, type: text }
+  kuerzel:    { path: Kuerzel, type: text }
+  indikator:  { path: Indikator, type: text }
+  raumbezug:  { path: Raumbezug, type: text }
+  zeitbezug:  { path: Zeitbezug, type: text }
+  wert:       { path: Wert, type: float, required: true }
+filters:
+  - { field: raumbezug, equals: Gemeinden }
+  - { field: kennziffer, prefix: "12" }
+min_rows: 1000
+target:
+  kind: attributes
+  table: example.indicator_values
+  source_column: source
+  source_value: INKAR
+  columns:
+    region_key: kennziffer
+    indicator: kuerzel
+    period: zeitbezug
+    value: wert
+    level: raumbezug
+  metadata:
+    table: example.dataset_metadata
+    key: { dataset: inkar-gemeinden-bb }
+    values:
+      publisher: INKAR
+      title: "INKAR, Gemeinden Brandenburg ({version})"
+      license: dl-de/by-2-0
+      attribution: Datenbasis INKAR, BBSR Bonn, dl-de/by-2-0
+      source_url: https://www.inkar.de/

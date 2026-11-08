@@ -113,6 +113,12 @@ class WfsConfig(HttpConfig):
     geometry_path: str = "geom"
     sort_by: str | None = None
     output_format: str | None = None
+    paging: bool | None = None
+
+    @property
+    def paged(self) -> bool:
+        """WFS 1.1.0 has no paging in the standard, so it is off there unless requested."""
+        return self.version == "2.0.0" if self.paging is None else self.paging
 
     @property
     def fallback_srid(self) -> int:
