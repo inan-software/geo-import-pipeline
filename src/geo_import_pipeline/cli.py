@@ -8,11 +8,10 @@ import logging
 import os
 import sys
 
-import httpx
-
 from .config import ConfigError, Settings, load_sources
 from .db import connect, migrate
-from .runner import run_source
+from .report import render_summary
+from .runner import execute_run
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -56,21 +55,12 @@ async def _run(settings: Settings, source_id: str | None) -> int:
     if source_id is not None and source_id not in sources:
         raise ConfigError(f"Unknown source: {source_id}")
     selected = [sources[source_id]] if source_id else [s for s in sources.values() if s.enabled]
-    conn = await connect(settings)
-    failed = 0
-    try:
-        await migrate(conn, settings.migrations_dir)
-        async with httpx.AsyncClient(headers={"User-Agent": settings.user_agent}, follow_redirects=True) as client:
-            for source in selected:
-                result = await run_source(conn, source, settings, client)
-                print(
-                    f"{source.id}: {result.status} written={result.stats.written} "
-                    f"skipped={result.stats.skipped} {result.error or ''}"
-                )
-                failed += result.status != "success"
-    finally:
-        await conn.close()
-    return 1 if failed else 0
+    if not selected:
+        raise ConfigError("No enabled sources")
+    report, path = await execute_run(settings, selected)
+    print(render_summary(report))
+    print(f"Report: {path}")
+    return 0 if report["status"] == "success" else 1
 
 
 def main(argv: list[str] | None = None) -> int:

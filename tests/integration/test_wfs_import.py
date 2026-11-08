@@ -166,7 +166,7 @@ def test_missing_target_column_is_reported_before_fetching(settings, db):
     handler = FakeWfs([feature("1", "A", square(370000))])
     result = run(settings, db, handler, cfg)
     assert result.status == "failed" and "no_such_column" in result.error
-    assert handler.requests == []
+    assert handler.requests == []  # Nothing is requested from the service for a broken setup.
 
 
 def test_concurrent_run_of_the_same_source_is_refused(settings, db):
