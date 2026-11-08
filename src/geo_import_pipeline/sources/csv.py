@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 import tempfile
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncIterator, Iterator
@@ -168,12 +169,14 @@ class CsvAdapter(SourceAdapter):
             process = subprocess.Popen(
                 ["unzip", "-p", str(path), _escape_member(member)], stdout=subprocess.PIPE, stderr=errors
             )
+            finished = False
             try:
                 text = io.TextIOWrapper(process.stdout, encoding=self.cfg.encoding, newline="")
                 yield from csv.reader(text, delimiter=self.cfg.delimiter, quotechar=self.cfg.quotechar)
+                finished = True
             finally:
-                if process.poll() is None and process.stdout.closed:
-                    process.terminate()
+                if not finished:  # Stopped early: unzip would block forever on the full pipe.
+                    process.kill()
                 code = process.wait()
             if code != 0:
                 errors.seek(0)
@@ -182,7 +185,11 @@ class CsvAdapter(SourceAdapter):
 
     async def records(self) -> AsyncIterator[RawRecord]:
         path = await self._local_file()
-        rows = self._rows(path)
+        with closing(self._rows(path)) as rows:
+            async for record in self._parse(rows):
+                yield record
+
+    async def _parse(self, rows: Iterator[list[str]]) -> AsyncIterator[RawRecord]:
         try:
             header = next(rows, None)
         except UnicodeDecodeError as exc:

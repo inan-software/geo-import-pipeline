@@ -71,7 +71,7 @@ async def inspect_target(conn: asyncpg.Connection, source: SourceConfig) -> Targ
 
 
 def _value_sql(source: SourceConfig, info: TargetInfo, column: str, alias: str = "s") -> str:
-    field_name = source.target.columns[column]
+    field_name = source.target.columns[column].replace("'", "''")
     return f"({alias}.attrs->>'{field_name}')::{info.column_types[column]}"
 
 

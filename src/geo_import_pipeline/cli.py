@@ -12,6 +12,8 @@ from .config import ConfigError, Settings, load_sources
 from .db import connect, migrate
 from .report import render_summary
 from .runner import execute_run
+from .scheduler import run_scheduler
+from .sources import load_plugins
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -24,6 +26,7 @@ def _parser() -> argparse.ArgumentParser:
     target = run.add_mutually_exclusive_group(required=True)
     target.add_argument("--source", help="Source id")
     target.add_argument("--all", action="store_true", help="All enabled sources")
+    commands.add_parser("schedule", help="Run each source on its configured schedule until stopped")
     return parser
 
 
@@ -71,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         settings = Settings.from_env()
+        load_plugins(settings.plugin_modules)
         if args.command == "list-sources":
             return _list_sources(settings)
         if args.command == "validate-config":
@@ -79,6 +83,8 @@ def main(argv: list[str] | None = None) -> int:
             return asyncio.run(_migrate(settings))
         if args.command == "run":
             return asyncio.run(_run(settings, None if args.all else args.source))
+        if args.command == "schedule":
+            return asyncio.run(run_scheduler(settings))
     except ConfigError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         return 2

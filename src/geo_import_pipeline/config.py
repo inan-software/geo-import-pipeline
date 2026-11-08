@@ -239,6 +239,8 @@ class SourceConfig(_Model):
         for flt in self.filters:
             if flt.field not in self.fields:
                 raise ValueError(f"filter field '{flt.field}' is not defined in fields")
+            if self.fields[flt.field].path is None:
+                raise ValueError(f"filter field '{flt.field}' needs a source path, not a constant")
         for column, field_name in self.target.columns.items():
             if field_name not in self.fields:
                 raise ValueError(f"column '{column}' maps to unknown field '{field_name}'")

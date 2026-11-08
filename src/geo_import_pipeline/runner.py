@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from contextlib import aclosing
 from datetime import datetime, timezone
 
 import asyncpg
@@ -32,18 +33,19 @@ def _now() -> datetime:
 async def _fetch_into(staging: Staging, source: SourceConfig, adapter, stats: SourceStats) -> None:
     transformer = Transformer(source, stats.warnings)
     batch: list[StagedRow] = []
-    async for raw in adapter.records():
-        if not transformer.matches(raw):
-            stats.filtered_out += 1
-            continue
-        row = transformer.apply(raw)
-        if row is None:
-            stats.skipped += 1
-            continue
-        batch.append(row)
-        if len(batch) >= BATCH_SIZE:
-            await staging.write(batch)
-            batch.clear()
+    async with aclosing(adapter.records()) as records:  # Releases files and processes on errors.
+        async for raw in records:
+            if not transformer.matches(raw):
+                stats.filtered_out += 1
+                continue
+            row = transformer.apply(raw)
+            if row is None:
+                stats.skipped += 1
+                continue
+            batch.append(row)
+            if len(batch) >= BATCH_SIZE:
+                await staging.write(batch)
+                batch.clear()
     await staging.write(batch)
 
 

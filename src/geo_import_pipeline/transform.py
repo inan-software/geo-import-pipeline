@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from datetime import date, datetime
 from typing import Any, Callable
 
@@ -115,7 +116,10 @@ class Transformer:
         if spec.type == "integer":
             return int(self._normalize_number(value))
         if spec.type == "float":
-            return float(self._normalize_number(value))
+            number = float(self._normalize_number(value))
+            if not math.isfinite(number):  # "nan" and "inf" parse, but are not values.
+                raise ValueError(f"not a finite number: {value}")
+            return number
         return _parse_date(value, spec.date_format)
 
     def _normalize_number(self, value: str) -> str:

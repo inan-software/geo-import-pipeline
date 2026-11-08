@@ -49,6 +49,12 @@ def test_invalid_source_is_rejected(change):
         variant(**change)
 
 
+def test_filter_on_a_constant_field_is_rejected():
+    fields = {"k": {"path": "k"}, "c": {"const": "x"}}
+    with pytest.raises(ValueError, match="source path"):
+        variant(fields=fields, filters=[{"field": "c", "equals": "x"}])
+
+
 def test_geometry_can_never_be_configured_for_deletion():
     target = {**BASE["target"], "delete_missing": True}
     with pytest.raises(ValueError):

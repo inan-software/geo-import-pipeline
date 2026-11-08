@@ -58,6 +58,13 @@ def test_unconvertible_required_value_skips_the_record():
     assert transformer.apply(rec(k="a", v="abc")) is None
 
 
+def test_nan_and_infinity_are_not_values():
+    transformer, log = make({"k": {"path": "k"}, "v": {"path": "v", "type": "float"}})
+    assert '"v": null' in transformer.apply(rec(k="a", v="NaN")).attrs
+    assert '"v": null' in transformer.apply(rec(k="b", v="inf")).attrs
+    assert log.as_list()[0]["count"] == 2
+
+
 def test_german_date_format():
     transformer, _ = make({"k": {"path": "k"}, "d": {"path": "d", "type": "date", "date_format": "%d.%m.%Y"}})
     assert '"d": "2024-12-31"' in transformer.apply(rec(k="a", d="31.12.2024")).attrs
