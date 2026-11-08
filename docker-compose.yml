@@ -29,6 +29,7 @@ services:
       GIP_LOG_LEVEL: ${GIP_LOG_LEVEL:-INFO}
     volumes:
       - ./config:/app/config:ro
+      - ./migrations:/app/migrations:ro
       - ./reports:/data/reports
       - cache:/data/cache
     depends_on:
