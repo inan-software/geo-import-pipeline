@@ -2,7 +2,7 @@
 
 Importiert WFS- und CSV-Quellen per Konfiguration in bestehende PostGIS-Tabellen. Das Tool ersetzt die Daten einer Quelle atomar, zählt die fachlichen Änderungen und schreibt nach jedem Lauf einen maschinenlesbaren Bericht.
 
-**Status:** Eigenprojekt der Inan Software OG, entstanden 11/2026, Open Source unter Apache-2.0. **Bisher kein produktiver Einsatz.** Getestet wurde bisher nur in einer lokalen Docker-Umgebung.
+**Status:** Eigenprojekt der Inan Software OG, entstanden 11/2026, Open Source unter Apache-2.0. **Bisher kein produktiver Einsatz.** Der Lauf gegen die echten Dienste fand bisher nur in einer lokalen Docker-Umgebung statt. Die automatischen Tests laufen zusätzlich bei jedem Push über GitHub Actions.
 
 ## Was das Tool tut
 
@@ -56,7 +56,7 @@ Alle 413 Geometrien sind gültig und liegen als `MULTIPOLYGON` in EPSG:4326 vor.
 - Ein Lauf über ganz Deutschland ist nicht getestet. Die Gesamtdatei wird zwar vollständig gelesen, übernommen wurde aber nur Brandenburg.
 - Der Bericht nennt je Änderungsart die Anzahl und bis zu 50 Beispielschlüssel, keine vollständige Liste.
 - Das Tool bewahrt keine früheren Datenstände auf.
-- Der GitHub-Actions-Workflow ist angelegt, aber noch nicht auf GitHub gelaufen. Die Tests liefen lokal über Docker Compose.
+- Die automatischen Tests über GitHub Actions nutzen selbst geschriebene Testdaten und rufen die echten Dienste nicht ab.
 
 ## Dokumentation
 
